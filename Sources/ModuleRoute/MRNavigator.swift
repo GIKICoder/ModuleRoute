@@ -13,15 +13,14 @@ import UIKit
 public class MRNavigator {
     
     public let container: DependencyContainer
-    private let failureHandler: () -> Void
     private var routeHandlers = [String: RouteFactory]()
     private var interceptors = [RouteInterceptor]()
 
-    public init(container: DependencyContainer = DefaultDependencyContainer(),
-                failureHandler: @escaping () -> Void = { preconditionFailure("Navigation failed!") }) {
+    public init(container: DependencyContainer = DefaultDependencyContainer()) {
         self.container = container
-        self.failureHandler = failureHandler
-        register(dependencyFactory: { [unowned self] in self }, forType: MRNavigator.self)
+        register(dependencyFactory: {
+            [unowned self] in self
+        }, forType: MRNavigator.self)
     }
     
     public func register<T>(dependencyFactory: @escaping DependencyFactory, forType type: T.Type) {
@@ -49,13 +48,11 @@ extension MRNavigator {
                                completion: ((Result<Void, Error>) -> Void)? = nil) {
         guard let scheme = url.scheme,
               let absoluteStr = url.absoluteString.removingPrefix("\(scheme)://") else {
-            failureHandler()
             return
         }
         
         let components = absoluteStr.components(separatedBy: "|")
         guard let routeIdentifier = components.first else {
-            failureHandler()
             return
         }
         
@@ -67,7 +64,6 @@ extension MRNavigator {
         }
         
         guard let handler = routeHandlers[routeIdentifier] else {
-            failureHandler()
             return
         }
         
@@ -75,7 +71,7 @@ extension MRNavigator {
            let route = routeType.init(parameters: parameters) {
             navigate(to: route, from: viewController, using: style, animated: animated, completion: completion)
         } else {
-            failureHandler()
+            
         }
     }
 }
@@ -102,7 +98,6 @@ extension MRNavigator {
         
         guard let handler = routeHandlers[type(of: route).identifier],
               let destinationModuleType = handler.destinationModule(for: route, from: viewController) else {
-            failureHandler()
             completion?(.failure(NavigationError.noHandler))
             return
         }
