@@ -9,12 +9,18 @@ import Foundation
 import ModuleRoute
 
 struct DetailRoute: MRRoute {
+    var params: [String : Any] = [:]
+    
+    var callback: ((Any?) -> Void)?
+    
     static var name: String = "detail"
-    
-    public var parameters: [String: Any] = [:]
-    
-    init(parameters: [String: Any]) {
-        self.parameters = parameters
-    }
+}
 
+
+struct ChatRoute: MRRoute {
+    var params: [String : Any] = [:]
+    
+    var callback: ((Any?) -> Void)?
+    
+    static var name: String = "chat"
 }

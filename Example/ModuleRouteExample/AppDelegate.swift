@@ -20,10 +20,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     private func setupRoute() {
         
-        navigator.register(module: DetailModule())
         navigator.register(dependencyFactory: {
-            ServiceA()
-        }, forType: ServiceAInterface.self)
+            DetailModule()
+        }, forType: DetailInterface.self)
+        navigator.register(dependencyFactory: {
+            ChatModule()
+        }, forType: ChatInterface.self)
+        
     }
 
 

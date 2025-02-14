@@ -11,8 +11,6 @@ import ModuleRoute
 class ViewController: UIViewController {
     
     @MRInject var navigator: MRNavigator
-    @MRInject var alertService: ServiceAInterface
-    
     // MARK: - Properties
     private var collectionView: UICollectionView!
     private let cellIdentifier = "Cell"
@@ -53,6 +51,7 @@ class ViewController: UIViewController {
         collectionView.dataSource = self
         
         view.addSubview(collectionView)
+    
     }
 }
 
@@ -75,9 +74,9 @@ extension ViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = items[indexPath.item]
         if indexPath.item == 1 {
-            alertService.showAlertWithTap()
+            navigator.navigate(to: DetailRoute(), from: self)
         } else {
-            navigator.navigate(to: DetailRoute(parameters: [:]), from: self, using: PushPresentation())
+            navigator.navigate(to: ChatRoute(), from: self)
         }
         
 //
@@ -124,25 +123,5 @@ class CustomCell: UICollectionViewCell {
 struct ItemModel {
     let title: String
     let color: UIColor
-}
-
-// MARK: - Detail View Controller
-class DetailViewController: UIViewController {
-    var item: ItemModel?
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .white
-        setupUI()
-    }
-    
-    private func setupUI() {
-        let label = UILabel()
-        label.text = item?.title
-        label.textAlignment = .center
-        label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
-        label.center = view.center
-        view.addSubview(label)
-    }
 }
 
