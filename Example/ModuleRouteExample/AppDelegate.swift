@@ -10,13 +10,22 @@ import ModuleRoute
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    
-    private let navigator: MRNavigator = MRNavigator()
+
+    private var navigator: MRNavigator = MRNavigator()
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         setupRoute()
         return true
     }
+
+    private func setupRoute() {
+        
+        navigator.register(module: DetailModule())
+        navigator.register(dependencyFactory: {
+            ServiceA()
+        }, forType: ServiceAInterface.self)
+    }
+
 
     // MARK: UISceneSession Lifecycle
 
@@ -32,15 +41,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
     
-    private func setupRoute() {
-    
-        navigator.register(routeHandler: AppRouteFacotry())
-        navigator.register(dependencyFactory: {
-            ServiceA()
-        }, forType: ServiceAInterface.self)
-        
-    }
-
-
+   
 }
 

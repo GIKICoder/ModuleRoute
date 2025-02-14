@@ -7,6 +7,6 @@
 
 import Foundation
 
-protocol  ServiceAInterface {
-    
+public protocol  ServiceAInterface {
+    func showAlertWithTap() 
 }

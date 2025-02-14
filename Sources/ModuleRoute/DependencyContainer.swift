@@ -15,6 +15,8 @@ public protocol DependencyContainer {
 }
 
 public class DefaultDependencyContainer: DependencyContainer {
+    
+    public static let shared = DefaultDependencyContainer()
 
     private var factories = [String: DependencyFactory]()
     private var instances = [String: Any]()
@@ -32,7 +34,6 @@ public class DefaultDependencyContainer: DependencyContainer {
         if let instance = instances[key] as? T {
             return instance
         }
-
         // 使用工厂创建新实例
         if let factory = factories[key] {
             let instance = factory()

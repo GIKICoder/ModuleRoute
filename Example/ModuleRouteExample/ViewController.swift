@@ -6,8 +6,12 @@
 //
 
 import UIKit
+import ModuleRoute
 
 class ViewController: UIViewController {
+    
+    @MRInject var navigator: MRNavigator
+    @MRInject var alertService: ServiceAInterface
     
     // MARK: - Properties
     private var collectionView: UICollectionView!
@@ -70,11 +74,17 @@ extension ViewController: UICollectionViewDataSource {
 extension ViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = items[indexPath.item]
+        if indexPath.item == 1 {
+            alertService.showAlertWithTap()
+        } else {
+            navigator.navigate(to: DetailRoute(parameters: [:]), from: self, using: PushPresentation())
+        }
         
-        // 创建详情页面并跳转
-        let detailVC = DetailViewController()
-        detailVC.item = item
-        navigationController?.pushViewController(detailVC, animated: true)
+//
+//        // 创建详情页面并跳转
+//        let detailVC = DetailViewController()
+//        detailVC.item = item
+//        navigationController?.pushViewController(detailVC, animated: true)
     }
 }
 

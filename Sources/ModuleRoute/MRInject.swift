@@ -8,24 +8,22 @@
 import Foundation
 
 @propertyWrapper
-public class MRInject<T>: Resolvable {
+public class MRInject<T> {
     private var dependency: T?
+
     public var wrappedValue: T {
-        guard let dependency = dependency else {
-            fatalError("Dependency \(T.self) not resolved")
+        get {
+            if dependency == nil {
+                dependency = DefaultDependencyContainer.shared.resolve(T.self)
+                if dependency == nil {
+                    fatalError("Dependency \(T.self) not resolved")
+                }
+            }
+            return dependency!
         }
-        return dependency
     }
 
     public init() {}
-
-    public func resolve(using container: DependencyContainer) {
-        dependency = container.resolve(T.self)
-    }
 }
 
-
-public protocol Resolvable {
-    func resolve(using container: DependencyContainer)
-}
 

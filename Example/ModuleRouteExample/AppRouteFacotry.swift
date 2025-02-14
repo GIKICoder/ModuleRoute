@@ -9,11 +9,17 @@ import Foundation
 import ModuleRoute
 import UIKit
 class AppRouteFacotry:RouteFactory {
+    
     var supportedRoutes: [MRRoute.Type] {
-        return []
+        return [
+            DetailRoute.self
+        ]
     }
     
     func destinationModule(for route: MRRoute, from viewController: UIViewController) -> MRModule.Type? {
+        if route is DetailRoute {
+            return  DetailModule.self
+        }
         return nil
     }
 }
