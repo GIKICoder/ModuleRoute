@@ -17,7 +17,6 @@ class DefaultPermissionChecker: MRPermissionChecker {
     func hasPermission(for route: MRRoute) -> Bool {
         return true
     }
-    
     func handleUnauthorized(route: MRRoute) -> RouteResult {
         return .none
     }

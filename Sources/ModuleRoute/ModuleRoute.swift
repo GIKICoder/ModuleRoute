@@ -24,11 +24,12 @@ public enum RouteResult {
 }
 
 public protocol MRModuleInterface {
+    static var supportedRoutes: [MRRoute.Type] { get }
     func handle(route: MRRoute) -> RouteResult
 }
 
 public protocol MRModule: MRModuleInterface {
-    static var supportedRoutes: [MRRoute.Type] { get }
+    
 }
 
 // MARK: - Basic Route Implementation

@@ -11,6 +11,7 @@ import ModuleRoute
 class ViewController: UIViewController {
     
     @MRInject var navigator: MRNavigator
+    @MRInject var detail: DetailInterface
     // MARK: - Properties
     private var collectionView: UICollectionView!
     private let cellIdentifier = "Cell"
@@ -74,7 +75,9 @@ extension ViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = items[indexPath.item]
         if indexPath.item == 1 {
-            navigator.navigate(to: DetailRoute(), from: self)
+//            navigator.navigate(to: DetailRoute(), from: self)
+            let result = detail.handle(route: DetailRoute())
+            print(result)
         } else {
             navigator.navigate(to: ChatRoute(), from: self)
         }

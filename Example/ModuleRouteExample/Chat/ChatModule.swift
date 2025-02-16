@@ -12,7 +12,7 @@ protocol ChatInterface: MRModuleInterface {
     
 }
 
-class ChatModule: MRModule {
+class ChatModule: ChatInterface {
     static var supportedRoutes: [MRRoute.Type] = [
         ChatRoute.self
     ]

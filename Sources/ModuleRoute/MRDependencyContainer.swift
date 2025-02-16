@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Foundation
 
 public typealias DependencyFactory = () -> Any
 
@@ -30,11 +29,11 @@ public class DefaultDependencyContainer: DependencyContainer {
     
     public func resolve<T>(_ type: T.Type) -> T? {
         let key = "\(type)"
-        // 检查是否已有实例
+        // 若已存在实例，则直接返回
         if let instance = instances[key] as? T {
             return instance
         }
-        // 使用工厂创建新实例
+        // 否则使用注册的工厂方法创建实例
         if let factory = factories[key] {
             let instance = factory()
             instances[key] = instance

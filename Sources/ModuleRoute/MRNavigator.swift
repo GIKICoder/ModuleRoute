@@ -9,29 +9,34 @@ import UIKit
 
 public class MRNavigator {
     private let container: DependencyContainer
-    private var routeToModuleTypeMap: [String: (DependencyContainer) -> MRModule] = [:]
-    private var moduleFactoryMap: [String: () -> MRModule] = [:]
+    
     private var middlewares: [MRMiddleware] = []
     private var interceptors: [MRInterceptor] = []
     private var deepLinkParser = DeepLinkParser()
     private var logger: MRLogger = DefaultLogger()
     private var permissionChecker: MRPermissionChecker = DefaultPermissionChecker()
     
+    // 在初始化时，将自身注册到容器中，保证 MRNavigator 也能被注入
     public init(container: DependencyContainer = DefaultDependencyContainer.shared) {
         self.container = container
+        // 将当前 navigator 注册为依赖项
+        self.container.register(dependencyFactory: { self }, forType: MRNavigator.self)
     }
     
+    // 修改后的字典，使用 ObjectIdentifier 作为键
+    private var routeToModuleTypeMap: [ObjectIdentifier: (DependencyContainer) -> MRModuleInterface] = [:]
+    
     // MARK: - Registration
-    public func register<Interface, Module>(dependencyFactory: @escaping () -> Module,
-                                            forType type: Interface.Type) where Module: MRModule {
+    public func register<T>(dependencyFactory: @escaping DependencyFactory, forType type: T.Type) where T: MRModuleInterface {
         container.register(dependencyFactory: dependencyFactory, forType: type)
         
-        // 注册路由映射
-        Module.supportedRoutes.forEach { routeType in
-            routeToModuleTypeMap[routeType.name] = { container in
+        // 将模块的所有支持路由逐一映射到通过容器解析模块实例的闭包
+        T.supportedRoutes.forEach { routeType in
+            let key = ObjectIdentifier(routeType)
+            routeToModuleTypeMap[key] = { container in
                 // 通过容器获取模块实例
-                guard let module = container.resolve(Module.self) else {
-                    fatalError("Failed to resolve module: \(Module.self)")
+                guard let module = container.resolve(T.self) else {
+                    fatalError("Failed to resolve module: \(T.self)")
                 }
                 return module
             }
@@ -60,7 +65,7 @@ public class MRNavigator {
             return
         }
         
-        // 处理路由
+        // 通过中间件处理路由，链式调用
         let result = processMiddlewares(route: route)
         handleResult(result, from: viewController, navigationType: navigationType, animated: animated, completion: completion)
     }
@@ -75,7 +80,7 @@ public class MRNavigator {
             return false
         }
         
-        if let rootVC = UIApplication.shared.keyWindow?.rootViewController {
+        if let rootVC = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController {
             navigate(to: route, from: rootVC)
             return true
         }
@@ -97,20 +102,20 @@ public class MRNavigator {
     
     // MARK: - Route Handling
     private func handleRouteDirectly(route: MRRoute) -> RouteResult {
-        // 检查拦截器
+        // 检查是否有拦截器需要处理当前路由
         for interceptor in interceptors {
             if interceptor.shouldIntercept(route: route) {
                 return interceptor.handleInterception(route: route)
             }
         }
         
-        // 获取对应的模块工厂
-        guard let moduleFactory = routeToModuleTypeMap[type(of: route).name] else {
-            logger.log(level: .warning, message: "No module found for route: \(type(of: route).name)", metadata: nil)
+        // 通过路由的类型获取模块
+        let routeTypeKey = ObjectIdentifier(type(of: route))
+        guard let moduleFactory = routeToModuleTypeMap[routeTypeKey] else {
+            logger.log(level: .warning, message: "No module found for route: \(type(of: route))", metadata: nil)
             return .none
         }
         
-        // 通过容器获取或创建模块实例
         let module = moduleFactory(container)
         let result = module.handle(route: route)
         logRoute(route, result: result)
@@ -132,11 +137,9 @@ public class MRNavigator {
         case .handler(let handler):
             handler()
             completion?()
-        case .service(_):
-            completion?()
-        case .value(_):
-            completion?()
-        case .none:
+        case .service(_),
+             .value(_),
+             .none:
             completion?()
         }
     }
@@ -177,10 +180,10 @@ public class MRNavigator {
         }
         return nil
     }
-   
+    
     private func logRoute(_ route: MRRoute, result: RouteResult) {
         logger.log(level: .info,
-                   message: "Processing route: \(type(of: route).name)",
+                   message: "Processing route: \(type(of: route))",
                    metadata: ["params": route.params, "result": String(describing: result)])
     }
 }

@@ -13,7 +13,7 @@ protocol DetailInterface: MRModuleInterface {
     
 }
 
-class DetailModule: MRModule {
+class DetailModule: DetailInterface {
     
     static var supportedRoutes: [MRRoute.Type] = [
         DetailRoute.self
@@ -23,7 +23,7 @@ class DetailModule: MRModule {
     public init() {}
 
     public func handle(route: MRRoute) -> RouteResult {
-        // 根据具体路由做出响应
+
         switch route {
         case is DetailRoute:
             let detail = DetailViewController()
