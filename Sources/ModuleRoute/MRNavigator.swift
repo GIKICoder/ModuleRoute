@@ -8,7 +8,8 @@
 import UIKit
 
 public class MRNavigator {
-    private let container: DependencyContainer
+    
+    public let serviceLocator: ServiceLocator
     
     private var middlewares: [MRMiddleware] = []
     private var interceptors: [MRInterceptor] = []
@@ -16,34 +17,29 @@ public class MRNavigator {
     private var logger: MRLogger = DefaultLogger()
     private var permissionChecker: MRPermissionChecker = DefaultPermissionChecker()
     
-    // 在初始化时，将自身注册到容器中，保证 MRNavigator 也能被注入
-    public init(container: DependencyContainer = DefaultDependencyContainer.shared) {
-        self.container = container
-        // 将当前 navigator 注册为依赖项
-        self.container.register(dependencyFactory: { self }, forType: MRNavigator.self)
-    }
-    
-    // 修改后的字典，使用 ObjectIdentifier 作为键
-    private var routeToModuleTypeMap: [ObjectIdentifier: (DependencyContainer) -> MRModuleInterface] = [:]
-    
-    // MARK: - Registration
-    public func register<T>(dependencyFactory: @escaping DependencyFactory, forType type: T.Type) where T: MRModuleInterface {
-        container.register(dependencyFactory: dependencyFactory, forType: type)
-        
-        // 将模块的所有支持路由逐一映射到通过容器解析模块实例的闭包
-        T.supportedRoutes.forEach { routeType in
-            let key = ObjectIdentifier(routeType)
-            routeToModuleTypeMap[key] = { container in
-                // 通过容器获取模块实例
-                guard let module = container.resolve(T.self) else {
-                    fatalError("Failed to resolve module: \(T.self)")
-                }
-                return module
+    public init(serviceLocator: ServiceLocator) {
+        self.serviceLocator = serviceLocator
+        serviceLocator.register {
+            self
+        }
+        if #available(iOS 13.0, *) {
+            Task{
+                await serviceLocator.build()
             }
         }
     }
     
-    // MARK: - Middleware & Interceptor
+    private var routeToModuleTypeMap: [ObjectIdentifier: (ServiceLocator) -> MRModule] = [:]
+    
+    public func register<T: MRModule>(moduleType: T.Type) {
+        T.supportedRoutes.forEach { routeType in
+            let key = ObjectIdentifier(routeType)
+            routeToModuleTypeMap[key] = { locator in
+                return try! locator.resolve() as T
+            }
+        }
+    }
+    
     public func addMiddleware(_ middleware: MRMiddleware) {
         middlewares.append(middleware)
     }
@@ -52,25 +48,21 @@ public class MRNavigator {
         interceptors.append(interceptor)
     }
     
-    // MARK: - Navigation
     public func navigate(to route: MRRoute,
                          from viewController: UIViewController,
                          navigationType: NavigationType = .push,
                          animated: Bool = true,
                          completion: (() -> Void)? = nil) {
         
-        // 权限检查
         if let permissionResult = checkPermission(for: route) {
             handleResult(permissionResult, from: viewController, navigationType: navigationType, animated: animated, completion: completion)
             return
         }
         
-        // 通过中间件处理路由，链式调用
         let result = processMiddlewares(route: route)
         handleResult(result, from: viewController, navigationType: navigationType, animated: animated, completion: completion)
     }
     
-    // MARK: - DeepLink
     public func registerDeepLinkHandler(scheme: String, handler: @escaping (URL) -> MRRoute?) {
         deepLinkParser.register(scheme: scheme, handler: handler)
     }
@@ -87,7 +79,6 @@ public class MRNavigator {
         return false
     }
     
-    // MARK: - Private Methods
     private func processMiddlewares(route: MRRoute, index: Int = 0) -> RouteResult {
         if index >= middlewares.count {
             return handleRouteDirectly(route: route)
@@ -100,23 +91,20 @@ public class MRNavigator {
         }
     }
     
-    // MARK: - Route Handling
     private func handleRouteDirectly(route: MRRoute) -> RouteResult {
-        // 检查是否有拦截器需要处理当前路由
         for interceptor in interceptors {
             if interceptor.shouldIntercept(route: route) {
                 return interceptor.handleInterception(route: route)
             }
         }
         
-        // 通过路由的类型获取模块
         let routeTypeKey = ObjectIdentifier(type(of: route))
         guard let moduleFactory = routeToModuleTypeMap[routeTypeKey] else {
             logger.log(level: .warning, message: "No module found for route: \(type(of: route))", metadata: nil)
             return .none
         }
         
-        let module = moduleFactory(container)
+        let module = moduleFactory(serviceLocator)
         let result = module.handle(route: route)
         logRoute(route, result: result)
         return result
@@ -138,8 +126,8 @@ public class MRNavigator {
             handler()
             completion?()
         case .service(_),
-             .value(_),
-             .none:
+                .value(_),
+                .none:
             completion?()
         }
     }

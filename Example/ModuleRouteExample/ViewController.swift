@@ -10,8 +10,10 @@ import ModuleRoute
 
 class ViewController: UIViewController {
     
-    @MRInject var navigator: MRNavigator
-    @MRInject var detail: DetailInterface
+    @PluginInject var navigator: MRNavigator
+//    @Inject(DetailInterface) var detail: DetailInterface
+    @PluginInject  var detail: DetailInterface
+    
     // MARK: - Properties
     private var collectionView: UICollectionView!
     private let cellIdentifier = "Cell"

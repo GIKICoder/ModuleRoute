@@ -8,7 +8,7 @@
 import UIKit
 import ModuleRoute
 
-protocol ChatInterface: MRModuleInterface {
+protocol ChatInterface: MRModule {
     
 }
 
@@ -22,8 +22,8 @@ class ChatModule: ChatInterface {
     public func handle(route: MRRoute) -> RouteResult {
         // 根据具体路由做出响应
         switch route {
-        case is DetailRoute:
-            let detail = DetailViewController()
+        case is ChatRoute:
+            let detail = ChatViewController()
             return .navigator(detail)
         default:
             return .none

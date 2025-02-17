@@ -11,23 +11,26 @@ import ModuleRoute
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    private var navigator: MRNavigator = MRNavigator()
+    public lazy var myServiceLocator = startServiceLocator {
+        AppModule()
+    }
+    private var navigator: MRNavigator!
     
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         setupRoute()
+      
         return true
     }
 
+    private func setupServiceLocator() async {
+        await myServiceLocator.build()
+    }
+    
     private func setupRoute() {
-        
-        navigator.register(dependencyFactory: {
-            DetailModule()
-        }, forType: DetailInterface.self)
-        navigator.register(dependencyFactory: {
-            ChatModule()
-        }, forType: ChatInterface.self)
-        
+        navigator = MRNavigator(serviceLocator:myServiceLocator)
+        navigator.register(moduleType: DetailModule.self)
+        navigator.register(moduleType: ChatModule.self)
     }
 
 
@@ -48,3 +51,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
    
 }
 
+
+class AppModule: ServiceLocatorModule {
+
+    override func build() {
+        single(DetailInterface.self) {
+            DetailModule()
+        }
+        single {
+            ChatModule()
+        }
+        single(ChatInterface.self) {
+            ChatModule()
+        }
+    }
+}

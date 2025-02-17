@@ -9,7 +9,7 @@ import Foundation
 import ModuleRoute
 import UIKit
 
-protocol DetailInterface: MRModuleInterface {
+protocol DetailInterface: MRModule {
     
 }
 
@@ -18,9 +18,9 @@ class DetailModule: DetailInterface {
     static var supportedRoutes: [MRRoute.Type] = [
         DetailRoute.self
     ]
+    public init() {
 
-    
-    public init() {}
+    }
 
     public func handle(route: MRRoute) -> RouteResult {
 
