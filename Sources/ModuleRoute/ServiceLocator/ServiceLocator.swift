@@ -38,7 +38,7 @@ public class ServiceLocator {
     /// - Parameters:
     ///   - type: The type of the singleton service to register.
     ///   - factory: A closure that creates and returns a single instance of the service.
-    internal func single<T>(_ type: T.Type = T.self, _ factory: @escaping () -> T) {
+    public func single<T>(_ type: T.Type = T.self, _ factory: @escaping () -> T) {
         let key = String(describing: type)
         singleLock.lock()
         defer { singleLock.unlock() }

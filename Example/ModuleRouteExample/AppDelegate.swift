@@ -11,9 +11,10 @@ import ModuleRoute
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    public lazy var myServiceLocator = startServiceLocator {
-        AppModule()
-    }
+    public lazy var myServiceLocator = startServiceLocator()
+//    {
+////      AppModule()
+//    }
     private var navigator: MRNavigator!
     
     
@@ -29,8 +30,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     private func setupRoute() {
         navigator = MRNavigator(serviceLocator:myServiceLocator)
-        navigator.register(moduleType: DetailModule.self)
-        navigator.register(moduleType: ChatModule.self)
+        navigator.register(DetailInterface.self, routes: DetailModule.supportedRoutes) {
+            DetailModule()
+        }
+        navigator.register(ChatInterface.self, routes: ChatModule.supportedRoutes) {
+            ChatModule()
+        }
+        
+//        navigator.register(interfaceType: DetailInterface.self, moduleType: DetailModule.self)
+//        navigator.register(moduleType: DetailModule.self)
+//        navigator.register(moduleType: ChatModule.self)
     }
 
 
@@ -58,9 +67,9 @@ class AppModule: ServiceLocatorModule {
         single(DetailInterface.self) {
             DetailModule()
         }
-        single {
-            ChatModule()
-        }
+//        single {
+//            ChatModule()
+//        }
         single(ChatInterface.self) {
             ChatModule()
         }

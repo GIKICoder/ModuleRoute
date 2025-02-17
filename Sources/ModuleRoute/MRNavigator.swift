@@ -19,23 +19,33 @@ public class MRNavigator {
     
     public init(serviceLocator: ServiceLocator) {
         self.serviceLocator = serviceLocator
+        MRNavigatorLocator.shared.serviceLocator = serviceLocator
         serviceLocator.register {
             self
         }
-        if #available(iOS 13.0, *) {
-            Task{
-                await serviceLocator.build()
-            }
-        }
+        buildServiceLocator()
     }
     
     private var routeToModuleTypeMap: [ObjectIdentifier: (ServiceLocator) -> MRModule] = [:]
     
-    public func register<T: MRModule>(moduleType: T.Type) {
-        T.supportedRoutes.forEach { routeType in
+    public func register<T>(_ type: T.Type = T.self, routes: [MRRoute.Type], _ factory: @escaping () -> T) -> Void {
+        serviceLocator.single(type, factory)
+        routes.forEach { routeType in
             let key = ObjectIdentifier(routeType)
             routeToModuleTypeMap[key] = { locator in
-                return try! locator.resolve() as T
+                guard let instance = try? locator.resolve() as T else {
+                    fatalError("Failed to resolve type \(T.self)")
+                }
+                return instance as! MRModule
+            }
+        }
+        buildServiceLocator()
+    }
+    
+    private func buildServiceLocator() {
+        if #available(iOS 13.0, *) {
+            Task{
+                await serviceLocator.build()
             }
         }
     }

@@ -15,11 +15,13 @@ protocol DetailInterface: MRModule {
 
 class DetailModule: DetailInterface {
     
+    @MRInject var navigator: MRNavigator
+    
     static var supportedRoutes: [MRRoute.Type] = [
         DetailRoute.self
     ]
     public init() {
-
+        
     }
 
     public func handle(route: MRRoute) -> RouteResult {

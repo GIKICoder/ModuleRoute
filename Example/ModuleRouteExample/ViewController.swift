@@ -10,9 +10,9 @@ import ModuleRoute
 
 class ViewController: UIViewController {
     
-    @PluginInject var navigator: MRNavigator
+    @MRInject var navigator: MRNavigator
 //    @Inject(DetailInterface) var detail: DetailInterface
-    @PluginInject  var detail: DetailInterface
+    
     
     // MARK: - Properties
     private var collectionView: UICollectionView!
@@ -77,18 +77,19 @@ extension ViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let item = items[indexPath.item]
         if indexPath.item == 1 {
-//            navigator.navigate(to: DetailRoute(), from: self)
+            @MRInject var detail: DetailInterface
             let result = detail.handle(route: DetailRoute())
+            switch result {
+            case .navigator(let vc):
+                self.navigationController?.pushViewController(vc, animated: true)
+            default: break
+                
+            }
             print(result)
         } else {
             navigator.navigate(to: ChatRoute(), from: self)
         }
-        
-//
-//        // 创建详情页面并跳转
-//        let detailVC = DetailViewController()
-//        detailVC.item = item
-//        navigationController?.pushViewController(detailVC, animated: true)
+
     }
 }
 
