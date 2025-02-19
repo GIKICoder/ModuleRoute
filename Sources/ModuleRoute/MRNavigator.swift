@@ -59,7 +59,7 @@ public class MRNavigator {
     }
     
     public func navigate(to route: MRRoute,
-                         from viewController: UIViewController,
+                         from viewController: UIViewController? = nil,
                          navigationType: NavigationType = .push,
                          animated: Bool = true,
                          completion: (() -> Void)? = nil) {
@@ -82,8 +82,8 @@ public class MRNavigator {
             return false
         }
         
-        if let rootVC = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController {
-            navigate(to: route, from: rootVC)
+        if let topvc = topViewController() {
+            navigate(to: route, from: topvc)
             return true
         }
         return false
@@ -121,7 +121,7 @@ public class MRNavigator {
     }
     
     private func handleResult(_ result: RouteResult,
-                              from viewController: UIViewController,
+                              from viewController: UIViewController?,
                               navigationType: NavigationType,
                               animated: Bool,
                               completion: (() -> Void)?) {
@@ -143,21 +143,31 @@ public class MRNavigator {
     }
     
     private func perform(navigation type: NavigationType,
-                         from: UIViewController,
+                         from: UIViewController?,
                          to: UIViewController,
                          animated: Bool,
                          completion: (() -> Void)?) {
+        var temp = (from != nil) ? from : topViewController()
+        guard let base = temp else {
+            completion?()
+            return
+        }
         switch type {
         case .push:
-            from.navigationController?.pushViewController(to, animated: animated)
-            completion?()
+            if let navigationController = base.navigationController {
+                navigationController.pushViewController(to, animated: animated)
+                completion?()
+            } else {
+                let nav = UINavigationController(rootViewController: to)
+                base.present(nav, animated: animated, completion: completion)
+            }
         case .present:
-            from.present(to, animated: animated, completion: completion)
+            base.present(to, animated: animated, completion: completion)
         case .modal:
             to.modalPresentationStyle = .fullScreen
-            from.present(to, animated: animated, completion: completion)
+            base.present(to, animated: animated, completion: completion)
         case .replace:
-            guard let navigationController = from.navigationController else {
+            guard let navigationController = base.navigationController else {
                 completion?()
                 return
             }
@@ -167,7 +177,7 @@ public class MRNavigator {
             navigationController.setViewControllers(viewControllers, animated: animated)
             completion?()
         case .custom(let handler):
-            handler(from, to)
+            handler(base, to)
             completion?()
         }
     }
@@ -183,5 +193,72 @@ public class MRNavigator {
         logger.log(level: .info,
                    message: "Processing route: \(type(of: route))",
                    metadata: ["params": route.params, "result": String(describing: result)])
+    }
+}
+
+
+public extension MRNavigator {
+    
+    ///  Get the top most view controller from the base view controller; default param is UIWindow's rootViewController
+    func topViewController(_ from: UIViewController? = nil) -> UIViewController? {
+        var base = (from != nil) ? from : compatibleKeyWindow?.rootViewController
+        if let nav = base as? UINavigationController {
+            return topViewController(nav.visibleViewController)
+        }
+        if let tab = base as? UITabBarController {
+            if let selected = tab.selectedViewController {
+                return topViewController(selected)
+            }
+        }
+        if let presented = base?.presentedViewController {
+            return topViewController(presented)
+        }
+        return base
+    }
+
+    var compatibleKeyWindow: UIWindow? {
+        if #available(iOS 13, *) {
+            return UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap { $0.windows }
+                .first { $0.isKeyWindow }
+        } else {
+            return UIApplication.shared.keyWindow
+        }
+    }
+    /// 重置应用到根视图控制器
+    func resetToRootViewController(_ animated: Bool = false) {
+        guard let window = compatibleKeyWindow,
+              let rootViewController = window.rootViewController else {
+            return
+        }
+        
+        // 1. 先处理当前显示的模态视图
+        if let presentedVC = rootViewController.presentedViewController {
+            presentedVC.dismiss(animated: false) {
+                self.resetToRootHelper(rootViewController, animated: animated)
+            }
+        } else {
+            resetToRootHelper(rootViewController, animated: animated)
+        }
+    }
+    
+    private func resetToRootHelper(_ rootViewController: UIViewController, animated: Bool) {
+        // 2. 处理 UINavigationController
+        if let navigationController = rootViewController as? UINavigationController {
+            navigationController.popToRootViewController(animated: animated)
+        }
+        
+        // 3. 处理 UITabBarController
+        if let tabBarController = rootViewController as? UITabBarController {
+            // 重置所有 tab 的导航栈
+            tabBarController.viewControllers?.forEach { viewController in
+                if let navigationController = viewController as? UINavigationController {
+                    navigationController.popToRootViewController(animated: animated)
+                }
+            }
+            // 切换到第一个 tab
+            tabBarController.selectedIndex = 0
+        }
     }
 }
